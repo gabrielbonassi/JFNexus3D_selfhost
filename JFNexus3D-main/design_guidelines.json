@@ -1,0 +1,97 @@
+{
+  "theme": "dark",
+  "archetype": "Jewel & Luxury",
+  "domain": "3D Printing Projects Repository",
+  "colors": {
+    "background": "#0B061A",
+    "foreground": "#F8F7FA",
+    "primary": "#3B82F6",
+    "primary_foreground": "#FFFFFF",
+    "secondary": "#1A102C",
+    "secondary_foreground": "#D4CDE6",
+    "accent": "#00E5FF",
+    "accent_foreground": "#0B061A",
+    "muted": "#160C26",
+    "muted_foreground": "#8F81B3",
+    "border": "#281A45",
+    "card": "#130A24",
+    "card_foreground": "#F8F7FA"
+  },
+  "typography": {
+    "headings": "Outfit",
+    "body": "Manrope",
+    "setup_command": "Use Google Fonts for Outfit and Manrope",
+    "heading_weight": "font-bold tracking-tight",
+    "body_weight": "font-normal leading-relaxed"
+  },
+  "spacing_and_layout": {
+    "container_padding": "p-6 md:p-8 lg:p-12",
+    "grid_strategy": "Instagram-style explore grid: Masonry layout or a dynamic Tetris Grid (mixing col-span-1 and col-span-2) to showcase 3D projects visually.",
+    "corners": "rounded-xl",
+    "gaps": "gap-4 md:gap-6"
+  },
+  "surface_strategies": [
+    "Glassmorphism (The 'Crystal' Variant) for Sticky Navigation and Modals: bg-black/40 backdrop-blur-xl border-b border-white/10.",
+    "Cards: Solid background (#130A24) with 1px border (#281A45), hover effect with subtle neon blue shadow or border-accent glow."
+  ],
+  "components_strategy": {
+    "cards": "Project cards should be visual-first. Hide text info on default, reveal on hover (like Instagram), or place subtly at bottom. No heavy card containers, just the image bounding box with rounded corners.",
+    "buttons": "Shadcn buttons heavily customized. Primary: bg-blue-600 hover:bg-blue-500 text-white. Secondary: bg-white/5 hover:bg-white/10.",
+    "search_bar": "Sticky search bar at the top or prominent in hero, rounded-full, with dark purple background and glowing subtle blue border on focus."
+  },
+  "interactions": {
+    "hover": "Scale up slightly (scale-105) on project cards, fade in details.",
+    "transitions": "transition-all duration-300 ease-out"
+  },
+  "testing": {
+    "attributes": "All interactive elements (buttons, links, inputs, favorites toggle, payment submit) MUST have a data-testid attribute in kebab-case."
+  },
+  "image_urls": [
+    {
+      "url": "https://static.prod-images.emergentagent.com/jobs/969c3e37-e2e1-4b6a-ad71-15d2e087d495/images/37ddc39a62a99f1dea37641c076333b6ad51072b0ff1fd0a15b8140ed90f6e85.png",
+      "description": "Hero banner with sleek modern abstract 3D render",
+      "category": "hero"
+    },
+    {
+      "url": "https://static.prod-images.emergentagent.com/jobs/969c3e37-e2e1-4b6a-ad71-15d2e087d495/images/a25141bc548a54f7a7ad957b4c380dc1545bb375ba2ec0475d288b7d8cf33b7d.png",
+      "description": "3D printed geometric vase",
+      "category": "project"
+    },
+    {
+      "url": "https://static.prod-images.emergentagent.com/jobs/969c3e37-e2e1-4b6a-ad71-15d2e087d495/images/5d16a0f789417e2650437c0a02560f3663e03f7dac43983ce28296848522e796.png",
+      "description": "3D printed mechanical gear mechanism",
+      "category": "project"
+    },
+    {
+      "url": "https://static.prod-images.emergentagent.com/jobs/969c3e37-e2e1-4b6a-ad71-15d2e087d495/images/6713e05922edda0c68dacf87b6aa13f5321b6959969c5bec71ca21c24e55b333.png",
+      "description": "Abstract 3D architectural sculpture",
+      "category": "project"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1748852458189-38b171a9e7ec?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHw0fHwzZCUyMHByaW50ZWQlMjBnZW9tZXRyaWMlMjBtb2RlbHxlbnwwfHx8fDE3NzkxOTEzMDR8MA&ixlib=rb-4.1.0&q=85",
+      "description": "White geometric sculpture",
+      "category": "project"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1703221561813-cdaa308cf9e7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHwxfHwzZCUyMHByaW50ZWQlMjBnZW9tZXRyaWMlMjBtb2RlbHxlbnwwfHx8fDE3NzkxOTEzMDR8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Purple vase",
+      "category": "project"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMDNkJTIwcmVuZGVyJTIwYXJ0fGVufDB8fHx8MTc3OTE5MTMwNHww&ixlib=rb-4.1.0&q=85",
+      "description": "Blue and white round illustration",
+      "category": "project"
+    }
+  ],
+  "instructions_to_main_agent": [
+    "Configure Tailwind with the provided color palette (Midnight Purple and Blue). Set global background to #0B061A.",
+    "Implement a main Explore Page with an Instagram-like masonry grid (or varied-span CSS grid) for the 3D projects. Prioritize images; text details overlay on hover.",
+    "Create a detailed project view (modal or dedicated page) showing large image, description, and 'Download 3D Files' CTA.",
+    "Integrate a persistent search bar in the navbar or hero, allowing users to search by keyword.",
+    "Add 'Favorite' functionality (heart icon) on each project, and build a dedicated 'Favorites' tab/page.",
+    "Build a 'Payment Methods' settings page where users can add/manage cards or view balances.",
+    "Include an Authentication UI (Login/Signup modal or page) with Google, Email, and GitHub options.",
+    "Ensure all components use the data-testid attribute for robust testing.",
+    "Use Phosphor icons or lucide-react for all iconography."
+  ]
+}
