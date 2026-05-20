@@ -45,9 +45,12 @@ const Upload = () => {
         await axios.post(
           `${API}/projects/${projectId}/upload?file_type=thumbnail`,
           formData,
-          { 
+          {
             withCredentials: true,
-            headers: { 'Content-Type': 'multipart/form-data' }
+            timeout: 1000 * 60 * 10,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
           }
         );
       }
@@ -58,9 +61,12 @@ const Upload = () => {
         await axios.post(
           `${API}/projects/${projectId}/upload?file_type=model`,
           formData,
-          { 
+         {
             withCredentials: true,
-            headers: { 'Content-Type': 'multipart/form-data' }
+            timeout: 1000 * 60 * 10,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
           }
         );
       }

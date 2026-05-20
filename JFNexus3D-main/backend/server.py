@@ -42,6 +42,13 @@ db = client[os.environ["DB_NAME"]]
 
 app = FastAPI()
 
+from fastapi.middleware.gzip import GZipMiddleware
+
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=1000,
+)
+
 # =========================
 # CORS
 # =========================
@@ -164,6 +171,11 @@ class User(BaseModel):
 
 
 class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class RegisterRequest(BaseModel):
+    name: str
     email: EmailStr
     password: str
 
@@ -376,6 +388,64 @@ async def login(
     "refresh_token": refresh_token
 }
 
+@api_router.post("/auth/register")
+async def register(
+    register_req: RegisterRequest,
+    response: Response,
+):
+    email = register_req.email.lower()
+
+    existing_user = await db.users.find_one({"email": email})
+
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Email already registered",
+        )
+
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+
+    user_doc = {
+        "user_id": user_id,
+        "email": email,
+        "password_hash": hash_password(register_req.password),
+        "name": register_req.name,
+        "role": "user",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.users.insert_one(user_doc)
+
+    access_token = create_access_token(user_id, email, "user")
+    refresh_token = create_refresh_token(user_id)
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=3600,
+        path="/",
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=604800,
+        path="/",
+    )
+
+    user_doc.pop("password_hash", None)
+
+    return {
+        "user": User(**user_doc),
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+    }
 
 @api_router.post("/auth/session-disabled")
 async def process_session(
@@ -601,6 +671,9 @@ async def upload_file(
 
     data = await file.read()
 
+    print("UPLOAD SIZE:", len(data))
+    print("UPLOAD FILE:", filename)
+
     result = put_object(
         path,
         data,
@@ -666,6 +739,132 @@ async def serve_file(file_path: str):
         filename=full_path.name,
         media_type="application/octet-stream",
     )
+
+
+@api_router.get("/favorites")
+async def get_favorites(user: User = Depends(get_current_user)):
+    favorites = await db.favorites.find(
+        {"user_id": user.user_id},
+        {"_id": 0},
+    ).to_list(100)
+
+    project_ids = [fav["project_id"] for fav in favorites]
+
+    projects = await db.projects.find(
+        {"project_id": {"$in": project_ids}},
+        {"_id": 0},
+    ).to_list(100)
+
+    return projects
+
+# =========================
+# FAVORITES
+# =========================
+
+@api_router.post("/favorites/{project_id}")
+async def add_favorite(
+    project_id: str,
+    user: User = Depends(get_current_user),
+):
+    project = await db.projects.find_one({"project_id": project_id})
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+    existing = await db.favorites.find_one(
+        {
+            "user_id": user.user_id,
+            "project_id": project_id,
+        }
+    )
+
+    if existing:
+        return {"message": "Already favorited"}
+
+    favorite_doc = {
+        "favorite_id": f"fav_{uuid.uuid4().hex[:12]}",
+        "user_id": user.user_id,
+        "project_id": project_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.favorites.insert_one(favorite_doc)
+
+    return {"message": "Favorited"}
+
+
+@api_router.delete("/favorites/{project_id}")
+async def remove_favorite(
+    project_id: str,
+    user: User = Depends(get_current_user),
+):
+    await db.favorites.delete_one(
+        {
+            "user_id": user.user_id,
+            "project_id": project_id,
+        }
+    )
+
+    return {"message": "Removed"}
+
+
+# =========================
+# BOTTON DELETE
+# =========================
+
+
+
+@api_router.delete("/projects/{project_id}")
+async def delete_project(
+    project_id: str,
+    admin: User = Depends(require_admin),
+):
+    project = await db.projects.find_one(
+        {"project_id": project_id},
+        {"_id": 0},
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+    paths_to_delete = []
+
+    if project.get("thumbnail_url"):
+        paths_to_delete.append(project["thumbnail_url"])
+
+    for file in project.get("files", []):
+        if file.get("path"):
+            paths_to_delete.append(file["path"])
+
+    for path in paths_to_delete:
+        full_path = UPLOAD_DIR / path
+
+        if full_path.exists():
+            full_path.unlink()
+
+    await db.files.delete_many(
+        {"storage_path": {"$in": paths_to_delete}}
+    )
+
+    await db.favorites.delete_many(
+        {"project_id": project_id}
+    )
+
+    await db.projects.delete_one(
+        {"project_id": project_id}
+    )
+
+    return {"message": "Project deleted"}
+
+
+
+
 # =========================
 # PAYMENTS
 # =========================

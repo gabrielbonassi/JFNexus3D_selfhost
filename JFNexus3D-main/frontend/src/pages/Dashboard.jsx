@@ -12,21 +12,28 @@ const API = `${BACKEND_URL}/api`;
 
 const Dashboard = () => {
   const navigate = useNavigate();
+
   const [projects, setProjects] = useState([]);
+  const [favoriteIds, setFavoriteIds] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+
   const isGuest = !user && localStorage.getItem("guest_mode") === "true";
 
   useEffect(() => {
     fetchUser();
     fetchProjects();
+    fetchFavorites();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get(`${API}/auth/me`, { withCredentials: true });
+      const response = await axios.get(`${API}/auth/me`, {
+        withCredentials: true,
+      });
+
       setUser(response.data);
       localStorage.removeItem("guest_mode");
     } catch (error) {
@@ -38,14 +45,33 @@ const Dashboard = () => {
 
   const fetchProjects = async (search = "") => {
     try {
-      const url = search ? `${API}/projects?search=${encodeURIComponent(search)}` : `${API}/projects`;
-      const response = await axios.get(url, { withCredentials: true });
+      const url = search
+        ? `${API}/projects?search=${encodeURIComponent(search)}`
+        : `${API}/projects`;
+
+      const response = await axios.get(url, {
+        withCredentials: true,
+      });
+
       setProjects(response.data);
     } catch (error) {
       console.error("Error fetching projects:", error);
       toast.error("Erro ao carregar projetos");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFavorites = async () => {
+    try {
+      const response = await axios.get(`${API}/favorites`, {
+        withCredentials: true,
+      });
+
+      const ids = response.data.map((project) => project.project_id);
+      setFavoriteIds(ids);
+    } catch (error) {
+      // Convidado ou usuário não logado não precisa carregar favoritos.
     }
   };
 
@@ -56,17 +82,38 @@ const Dashboard = () => {
 
   const toggleFavorite = async (projectId, e) => {
     e.stopPropagation();
-    if (!user) {
-      toast.error("Faça login para favoritar");
+
+    if (localStorage.getItem("guest_mode") === "true" || !user) {
+      toast.error("Faça login para favoritar projetos");
       navigate("/login");
       return;
     }
+
+    const isFavorited = favoriteIds.includes(projectId);
+
     try {
-      await axios.post(`${API}/favorites/${projectId}`, {}, { withCredentials: true });
-      toast.success("Adicionado aos favoritos");
+      if (isFavorited) {
+        await axios.delete(`${API}/favorites/${projectId}`, {
+          withCredentials: true,
+        });
+
+        setFavoriteIds((prev) => prev.filter((id) => id !== projectId));
+        toast.success("Removido dos favoritos");
+      } else {
+        await axios.post(
+          `${API}/favorites/${projectId}`,
+          {},
+          {
+            withCredentials: true,
+          }
+        );
+
+        setFavoriteIds((prev) => [...prev, projectId]);
+        toast.success("Adicionado aos favoritos");
+      }
     } catch (error) {
       console.error("Favorite error:", error);
-      toast.error("Erro ao favoritar");
+      toast.error("Erro ao atualizar favorito");
     }
   };
 
@@ -77,14 +124,22 @@ const Dashboard = () => {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <SideMenu user={user} isGuest={isGuest} />
+
               {user?.role === "admin" && (
-                <span data-testid="admin-badge" className="px-2 py-1 text-xs rounded-full bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/30 flex items-center gap-1">
+                <span
+                  data-testid="admin-badge"
+                  className="px-2 py-1 text-xs rounded-full bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/30 flex items-center gap-1"
+                >
                   <Shield className="h-3 w-3" />
                   ADMIN
                 </span>
               )}
+
               {isGuest && (
-                <span data-testid="guest-badge" className="px-2 py-1 text-xs rounded-full bg-gray-500/20 text-gray-300 border border-gray-500/30">
+                <span
+                  data-testid="guest-badge"
+                  className="px-2 py-1 text-xs rounded-full bg-gray-500/20 text-gray-300 border border-gray-500/30"
+                >
                   CONVIDADO
                 </span>
               )}
@@ -97,6 +152,7 @@ const Dashboard = () => {
         <form onSubmit={handleSearch} className="mb-8">
           <div className="relative max-w-2xl mx-auto">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+
             <Input
               data-testid="search-input"
               type="text"
@@ -109,12 +165,18 @@ const Dashboard = () => {
         </form>
 
         {loading ? (
-          <div className="text-center text-white py-20">Carregando projetos...</div>
+          <div className="text-center text-white py-20">
+            Carregando projetos...
+          </div>
         ) : projects.length === 0 ? (
-          <div data-testid="no-projects-message" className="text-center text-gray-400 py-20">
+          <div
+            data-testid="no-projects-message"
+            className="text-center text-gray-400 py-20"
+          >
             <p className="text-xl mb-4">Nenhum projeto encontrado</p>
+
             {user?.role === "admin" && (
-              <Button 
+              <Button
                 data-testid="upload-first-project-btn"
                 onClick={() => navigate("/upload")}
                 className="bg-blue-600 hover:bg-blue-500 text-white"
@@ -125,53 +187,83 @@ const Dashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {projects.map((project) => (
-              <div
-                key={project.project_id}
-                data-testid={`project-card-${project.project_id}`}
-                className="group relative rounded-xl overflow-hidden bg-[#130A24] border border-[#281A45] hover:border-[#3B82F6]/50 transition-all duration-300 cursor-pointer transform hover:scale-105"
-                onClick={() => navigate(`/project/${project.project_id}`)}
-              >
-                <div className="aspect-square relative overflow-hidden">
-                  {project.thumbnail_url ? (
-                    <img
-                      src={`${API}/files/${project.thumbnail_url}?auth=${document.cookie.split('session_token=')[1]?.split(';')[0] || document.cookie.split('access_token=')[1]?.split(';')[0]}`}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#1A102C] to-[#130A24] flex items-center justify-center">
-                      <Sparkles className="h-16 w-16 text-[#00E5FF]/30" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  {user && (
-                    <Button
-                      data-testid={`favorite-btn-${project.project_id}`}
-                      onClick={(e) => toggleFavorite(project.project_id, e)}
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Heart className="h-5 w-5" />
-                    </Button>
-                  )}
+            {projects.map((project) => {
+              const isFavorited = favoriteIds.includes(project.project_id);
+
+              return (
+                <div
+                  key={project.project_id}
+                  data-testid={`project-card-${project.project_id}`}
+                  className="group relative rounded-xl overflow-hidden bg-[#130A24] border border-[#281A45] hover:border-[#3B82F6]/50 transition-all duration-300 cursor-pointer transform hover:scale-105"
+                  onClick={() => navigate(`/project/${project.project_id}`)}
+                >
+                  <div className="aspect-square relative overflow-hidden">
+                    {project.thumbnail_url ? (
+                      <img
+                        src={`${API}/files/${project.thumbnail_url}?auth=${
+                          document.cookie
+                            .split("session_token=")[1]
+                            ?.split(";")[0] ||
+                          document.cookie
+                            .split("access_token=")[1]
+                            ?.split(";")[0]
+                        }`}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#1A102C] to-[#130A24] flex items-center justify-center">
+                        <Sparkles className="h-16 w-16 text-[#00E5FF]/30" />
+                      </div>
+                    )}
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                    {user && (
+                      <Button
+                        data-testid={`favorite-btn-${project.project_id}`}
+                        onClick={(e) => toggleFavorite(project.project_id, e)}
+                        variant="ghost"
+                        size="icon"
+                        className={`absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white transition-opacity ${
+                          isFavorited
+                            ? "opacity-100 text-red-400"
+                            : "opacity-0 group-hover:opacity-100"
+                        }`}
+                      >
+                        <Heart
+                          className="h-5 w-5"
+                          fill={isFavorited ? "currentColor" : "none"}
+                        />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="p-4">
+                    <h3 className="text-lg font-bold text-white mb-1 truncate">
+                      {project.title}
+                    </h3>
+
+                    <p className="text-sm text-gray-400 line-clamp-2">
+                      {project.description}
+                    </p>
+
+                    {project.tags && project.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {project.tags.slice(0, 3).map((tag, i) => (
+                          <span
+                            key={i}
+                            className="text-xs px-2 py-1 rounded-full bg-[#1A102C] text-[#00E5FF] border border-[#281A45]"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-bold text-white mb-1 truncate">{project.title}</h3>
-                  <p className="text-sm text-gray-400 line-clamp-2">{project.description}</p>
-                  {project.tags && project.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {project.tags.slice(0, 3).map((tag, i) => (
-                        <span key={i} className="text-xs px-2 py-1 rounded-full bg-[#1A102C] text-[#00E5FF] border border-[#281A45]">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

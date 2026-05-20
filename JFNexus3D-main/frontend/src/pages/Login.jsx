@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -194,6 +194,12 @@ const Login = () => {
                 >
                   ← Voltar para opções de login
                 </Button>
+                <p className="text-center text-gray-400 mt-4">
+                  Não tem conta?{" "}
+                  <Link to="/register" className="text-blue-400 hover:text-blue-300">
+                    Criar conta
+                  </Link>
+                </p>
               </form>
             </div>
           )}
