@@ -39,6 +39,26 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ["DB_NAME"]]
 
 app = FastAPI()
+
+# =========================
+# CORS
+# =========================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[],
+    allow_origin_regex=r"https://.*\.app\.github\.dev",
+    allow_credentials=True,
+    allow_methods=[
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS",
+    ],
+    allow_headers=["*"],
+)
+
 api_router = APIRouter(prefix="/api")
 
 UPLOAD_DIR = ROOT_DIR / "uploads"
@@ -346,7 +366,11 @@ async def login(
 
     user_doc.pop("password_hash", None)
 
-    return User(**user_doc)
+    return {
+    "user": User(**user_doc),
+    "access_token": access_token,
+    "refresh_token": refresh_token
+}
 
 
 @api_router.post("/auth/session-disabled")
@@ -654,24 +678,17 @@ async def logout(response: Response):
         "message": "Logged out"
     }
 
+# =========================
+# AUTH/ME
+# =========================
+
+@api_router.get("/auth/me")
+async def get_me(user: User = Depends(get_current_user)):
+    return user
+
 
 # =========================
-# CORS
-# =========================
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# =========================
-# LOGGING
+# LOGGINGs
 # =========================
 
 logging.basicConfig(
