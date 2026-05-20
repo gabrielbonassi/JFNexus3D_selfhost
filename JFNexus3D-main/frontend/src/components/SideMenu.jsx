@@ -18,14 +18,18 @@ const SideMenu = ({ user, isGuest }) => {
   };
 
   const handleLogout = async () => {
-    try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
-      localStorage.removeItem("guest_mode");
-      navigate("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
+  try {
+    await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
+  } catch (error) {
+    console.error("Logout error:", error);
+  } finally {
+    localStorage.removeItem("guest_mode");
+    localStorage.clear();
+    sessionStorage.clear();
+
+    window.location.href = "/login";
+  }
+};
 
   const handleExitGuest = () => {
     localStorage.removeItem("guest_mode");

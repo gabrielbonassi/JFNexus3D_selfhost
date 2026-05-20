@@ -14,6 +14,8 @@ from fastapi import (
     Query,
     Depends,
 )
+
+from fastapi.responses import FileResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
@@ -70,14 +72,13 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 def put_object(path: str, data: bytes, content_type: str) -> dict:
     file_path = UPLOAD_DIR / path
-
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(file_path, "wb") as f:
         f.write(data)
 
     return {
-        "path": str(file_path),
+        "path": path,
         "content_type": content_type,
         "size": len(data),
     }
@@ -85,6 +86,9 @@ def put_object(path: str, data: bytes, content_type: str) -> dict:
 
 def get_object(path: str):
     file_path = UPLOAD_DIR / path
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
 
     with open(file_path, "rb") as f:
         content = f.read()
@@ -516,6 +520,25 @@ async def get_projects(
 
     return projects
 
+@api_router.get("/projects/{project_id}")
+async def get_project(project_id: str):
+    project = await db.projects.find_one(
+        {"project_id": project_id},
+        {"_id": 0},
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+    await db.projects.update_one(
+        {"project_id": project_id},
+        {"$inc": {"view_count": 1}},
+    )
+
+    return project
 
 @api_router.post("/projects")
 async def create_project(
@@ -628,7 +651,21 @@ async def upload_file(
         "file_id": file_doc["file_id"],
     }
 
+@api_router.get("/files/{file_path:path}")
+async def serve_file(file_path: str):
+    full_path = UPLOAD_DIR / file_path
 
+    if not full_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Arquivo não encontrado",
+        )
+
+    return FileResponse(
+        full_path,
+        filename=full_path.name,
+        media_type="application/octet-stream",
+    )
 # =========================
 # PAYMENTS
 # =========================

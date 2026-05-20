@@ -31,26 +31,6 @@ const ProjectDetail = () => {
     }
   };
 
-  const handleDownload = async (file) => {
-    try {
-      const response = await axios.get(`${API}/files/${file.path}`, {
-        withCredentials: true,
-        responseType: 'blob'
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', file.filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success(`Baixando ${file.filename}`);
-    } catch (error) {
-      console.error("Download error:", error);
-      toast.error("Erro ao baixar arquivo");
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B061A] flex items-center justify-center">
@@ -130,17 +110,23 @@ const ProjectDetail = () => {
                       className="flex items-center justify-between p-4 rounded-xl bg-[#130A24] border border-[#281A45] hover:border-[#3B82F6]/50 transition-all"
                     >
                       <div>
-                        <p className="text-white font-medium">{file.filename}</p>
-                        <p className="text-sm text-gray-400">{(file.size / 1024).toFixed(2)} KB</p>
-                      </div>
-                      <Button
-                        data-testid={`download-btn-${file.file_id}`}
-                        onClick={() => handleDownload(file)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Baixar
-                      </Button>
+                    <p className="text-white font-medium">
+                    {file.filename}
+                    </p>
+
+                  <p className="text-sm text-gray-400">
+                    {(file.size / 1024).toFixed(2)} KB
+                  </p>
+
+                  <a
+                      href={`${API}/files/${file.path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block px-4 py-2 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563EB]"
+                    >
+                      Baixar
+                  </a>
+                </div>
                     </div>
                   ))}
                 </div>
