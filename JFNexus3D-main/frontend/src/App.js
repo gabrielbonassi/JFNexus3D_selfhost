@@ -13,6 +13,7 @@ import Payments from "@/pages/Payments";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Register from "@/pages/Register";
+import Admin from "./pages/Admin";
 
 function AppRouter() {
   if (window.location.hash?.includes('session_id=')) {
@@ -31,6 +32,7 @@ function AppRouter() {
       <Route path="/payments" element={<ProtectedRoute requireAuth><Payments /></ProtectedRoute>} />
       <Route path="/payment-success" element={<ProtectedRoute requireAuth><PaymentSuccess /></ProtectedRoute>} />
       <Route path="/register" element={<Register />} />
+      <Route path="/admin" element={<Admin />} />
     </Routes>
   );
 }

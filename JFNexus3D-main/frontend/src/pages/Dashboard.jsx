@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Heart, Search, Sparkles, Shield } from "lucide-react";
+import { Heart, Search, Sparkles, Shield, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import SideMenu from "@/components/SideMenu";
 
@@ -20,6 +20,18 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
 
   const isGuest = !user && localStorage.getItem("guest_mode") === "true";
+
+  const getDaysLeft = () => {
+    if (!user?.expires_at || user?.role === "admin") return null;
+
+    const expiresAt = new Date(user.expires_at);
+    const now = new Date();
+    const diff = expiresAt - now;
+
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
+  const daysLeft = getDaysLeft();
 
   useEffect(() => {
     fetchUser();
@@ -149,6 +161,24 @@ const Dashboard = () => {
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {user && daysLeft !== null && (
+          <div
+            className={`mb-6 rounded-xl border p-4 flex items-center gap-3 ${
+              daysLeft <= 5
+                ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-100"
+                : "border-blue-500/30 bg-blue-500/10 text-blue-100"
+            }`}
+          >
+            <AlertTriangle className="h-5 w-5" />
+            <span>
+              Seu acesso expira em{" "}
+              <strong>{daysLeft}</strong>{" "}
+              {daysLeft === 1 ? "dia" : "dias"}.
+              {daysLeft <= 5 && " Entre em contato pelo WhatsApp para renovar."}
+            </span>
+          </div>
+        )}
+
         <form onSubmit={handleSearch} className="mb-8">
           <div className="relative max-w-2xl mx-auto">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -200,14 +230,7 @@ const Dashboard = () => {
                   <div className="aspect-square relative overflow-hidden">
                     {project.thumbnail_url ? (
                       <img
-                        src={`${API}/files/${project.thumbnail_url}?auth=${
-                          document.cookie
-                            .split("session_token=")[1]
-                            ?.split(";")[0] ||
-                          document.cookie
-                            .split("access_token=")[1]
-                            ?.split(";")[0]
-                        }`}
+                        src={`${API}/files/${project.thumbnail_url}`}
                         alt={project.title}
                         className="w-full h-full object-cover"
                       />

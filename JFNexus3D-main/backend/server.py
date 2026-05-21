@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from pathlib import Path
+from datetime import datetime, timezone, timedelta
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -167,6 +168,7 @@ class User(BaseModel):
     name: str
     role: str = "user"
     picture: Optional[str] = None
+    expires_at: Optional[str] = None
     created_at: str
 
 
@@ -335,6 +337,21 @@ async def login(
             detail="Invalid credentials",
         )
 
+    expires_at = user_doc.get("expires_at")
+
+    if expires_at:
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+        if expires_at < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=403,
+                detail="Seu acesso expirou. Entre em contato pelo WhatsApp para renovar.",
+            )
+
     if "password_hash" not in user_doc:
         raise HTTPException(
             status_code=401,
@@ -383,10 +400,10 @@ async def login(
     user_doc.pop("password_hash", None)
 
     return {
-    "user": User(**user_doc),
-    "access_token": access_token,
-    "refresh_token": refresh_token
-}
+        "user": User(**user_doc),
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+    }
 
 @api_router.post("/auth/register")
 async def register(
@@ -411,6 +428,11 @@ async def register(
         "password_hash": hash_password(register_req.password),
         "name": register_req.name,
         "role": "user",
+
+        "expires_at": (
+            datetime.now(timezone.utc) + timedelta(days=30)
+        ).isoformat(),
+
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -863,6 +885,99 @@ async def delete_project(
     return {"message": "Project deleted"}
 
 
+
+@api_router.post("/admin/users/{user_id}/renew")
+async def renew_user_access(
+    user_id: str,
+    admin: User = Depends(require_admin),
+):
+    user = await db.users.find_one(
+        {"user_id": user_id},
+        {"_id": 0},
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    current_expiration = user.get("expires_at")
+
+    if current_expiration:
+        current_expiration = datetime.fromisoformat(current_expiration)
+    else:
+        current_expiration = datetime.now(timezone.utc)
+
+    if current_expiration.tzinfo is None:
+        current_expiration = current_expiration.replace(tzinfo=timezone.utc)
+
+    if current_expiration < datetime.now(timezone.utc):
+        current_expiration = datetime.now(timezone.utc)
+
+    new_expiration = current_expiration + timedelta(days=30)
+
+    await db.users.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "expires_at": new_expiration.isoformat()
+            }
+        },
+    )
+
+    return {
+        "message": "Access renewed",
+        "expires_at": new_expiration.isoformat(),
+    }
+
+
+
+# =========================
+# /ADMIN
+# =========================
+
+@api_router.get("/admin/users")
+async def get_admin_users(admin: User = Depends(require_admin)):
+    users = await db.users.find(
+        {},
+        {"_id": 0, "password_hash": 0},
+    ).sort("created_at", -1).to_list(200)
+
+    return users
+
+
+# =========================
+# /ADMIN BOTTON DELETE
+# =========================
+
+@api_router.delete("/admin/users/{user_id}")
+async def delete_admin_user(
+    user_id: str,
+    admin: User = Depends(require_admin),
+):
+    if admin.user_id == user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Você não pode deletar seu próprio usuário admin.",
+        )
+
+    user = await db.users.find_one(
+        {"user_id": user_id},
+        {"_id": 0},
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    await db.favorites.delete_many({"user_id": user_id})
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.users.delete_one({"user_id": user_id})
+
+    return {"message": "User deleted"}
 
 
 # =========================
