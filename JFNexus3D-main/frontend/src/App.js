@@ -10,7 +10,6 @@ import Favorites from "@/pages/Favorites";
 import Suggestions from "@/pages/Suggestions";
 import Upload from "@/pages/Upload";
 import Payments from "@/pages/Payments";
-import PaymentSuccess from "@/pages/PaymentSuccess";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Register from "@/pages/Register";
 import Admin from "./pages/Admin";
@@ -30,7 +29,6 @@ function AppRouter() {
       <Route path="/suggestions" element={<ProtectedRoute requireAuth><Suggestions /></ProtectedRoute>} />
       <Route path="/upload" element={<ProtectedRoute requireAdmin><Upload /></ProtectedRoute>} />
       <Route path="/payments" element={<ProtectedRoute requireAuth><Payments /></ProtectedRoute>} />
-      <Route path="/payment-success" element={<ProtectedRoute requireAuth><PaymentSuccess /></ProtectedRoute>} />
       <Route path="/register" element={<Register />} />
       <Route path="/admin" element={<Admin />} />
     </Routes>

@@ -129,7 +129,7 @@ const SideMenu = ({ user, isGuest }) => {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-[#1A102C] hover:text-white transition-all group"
               >
                 <CreditCard className="h-5 w-5 text-[#00E5FF] group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Pagamentos</span>
+                <span className="font-medium">Suporte & Renovação</span>
               </button>
             )}
           </nav>
