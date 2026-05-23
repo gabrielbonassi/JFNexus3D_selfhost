@@ -75,6 +75,13 @@ app.add_middleware(
 
 api_router = APIRouter(prefix="/api")
 
+@api_router.get("/debug/version")
+async def debug_version():
+    return {
+        "version": "cors-vercel-fix-001",
+        "message": "Backend atualizado no Railway",
+    }
+
 UPLOAD_DIR = ROOT_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
