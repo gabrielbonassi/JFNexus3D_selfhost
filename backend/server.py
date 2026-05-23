@@ -55,12 +55,19 @@ app.add_middleware(
 # Isso evita ficar editando CORS toda vez que o link muda.
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+
+        # coloque exatamente o domínio que aparece no navegador
+        "https://jf-nexus3d-selfhost-g1ffy47x.vercel.app",
+        "https://jf-nexus3-d-selfhost-g1ffy47x.vercel.app",
         "https://jf-nexus-3d-selfhost-g1ffy47x.vercel.app",
+        "https://jf-nexus-3-d-selfhost-g1ffy47x.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
