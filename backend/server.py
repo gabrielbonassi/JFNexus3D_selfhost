@@ -53,15 +53,17 @@ app.add_middleware(
 # =========================
 # Aceita localhost, GitHub Codespaces e VS Code Dev Tunnels.
 # Isso evita ficar editando CORS toda vez que o link muda.
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://jf-nexus-3d-selfhost-g1ffy47x.vercel.app",
     ],
-    allow_origin_regex=r"^https://.*$",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
