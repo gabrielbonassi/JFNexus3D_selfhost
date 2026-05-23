@@ -58,7 +58,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://jf-nexus-3d-selfhost-g1ffy47x.vercel.app"
+        "https://jf-nexus-3d-selfhost-g1ffy47x.vercel.app",
+        "https://jf-nexus3-d-selfhost-gllffy47x.vercel.app",
+
     ],
     allow_origin_regex=(
         r"^https://.*\.app\.github\.dev$|"
