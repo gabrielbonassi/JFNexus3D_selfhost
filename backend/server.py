@@ -82,9 +82,6 @@ async def debug_version():
         "message": "Backend atualizado no Railway",
     }
 
-UPLOAD_DIR = ROOT_DIR / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
-
 # =========================
 # STORAGE
 # =========================
