@@ -3,14 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  AlertTriangle,
-  Heart,
-  Search,
-  Sparkles,
-  Shield,
-  Upload,
-} from "lucide-react";
+import { Heart, Search, Sparkles, Shield, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import SideMenu from "@/components/SideMenu";
 
@@ -41,29 +34,13 @@ const Dashboard = () => {
   const daysLeft = getDaysLeft();
 
   useEffect(() => {
-    const loadDashboard = async () => {
-      setLoading(true);
-
-      const currentUser = await fetchUser();
-      await fetchProjects();
-
-      if (currentUser && currentUser.role !== "guest") {
-        await fetchFavorites(currentUser);
-      }
-
-      setLoading(false);
-    };
-
-    loadDashboard();
+    fetchUser();
+    fetchProjects();
+    fetchFavorites();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUser = async () => {
-    if (localStorage.getItem("guest_mode") === "true") {
-      setUser(null);
-      return null;
-    }
-
     try {
       const response = await axios.get(`${API}/auth/me`, {
         withCredentials: true,
@@ -71,16 +48,14 @@ const Dashboard = () => {
 
       setUser(response.data);
       localStorage.removeItem("guest_mode");
-      return response.data;
     } catch (error) {
-      setUser(null);
+  if (localStorage.getItem("guest_mode") === "true") {
+    setLoading(false);
+    return;
+  }
 
-      if (localStorage.getItem("guest_mode") !== "true") {
-        navigate("/login");
-      }
-
-      return null;
-    }
+  navigate("/login");
+}
   };
 
   const fetchProjects = async (search = "") => {
@@ -97,35 +72,33 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Error fetching projects:", error);
       toast.error("Erro ao carregar projetos");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchFavorites = async (currentUser = user) => {
-    if (
-      !currentUser ||
-      localStorage.getItem("guest_mode") === "true"
-    ) {
-      setFavoriteIds([]);
-      return;
-    }
+const fetchFavorites = async () => {
+  if (!user || localStorage.getItem("guest_mode") === "true") {
+    return;
+  }
 
-    try {
-      const response = await axios.get(`${API}/favorites`, {
-        withCredentials: true,
-      });
+  try {
+    const response = await axios.get(`${API}/favorites`, {
+      withCredentials: true,
+    });
 
-      const ids = response.data.map((project) => project.project_id);
-      setFavoriteIds(ids);
-    } catch (error) {
-      setFavoriteIds([]);
-    }
-  };
+    const ids = response.data.map(
+      (project) => project.project_id
+    );
 
-  const handleSearch = async (e) => {
+    setFavoriteIds(ids);
+  } catch (error) {
+    setFavoriteIds([]);
+  }
+};
+  const handleSearch = (e) => {
     e.preventDefault();
-    setLoading(true);
-    await fetchProjects(searchQuery);
-    setLoading(false);
+    fetchProjects(searchQuery);
   };
 
   const toggleFavorite = async (projectId, e) => {
@@ -165,11 +138,6 @@ const Dashboard = () => {
     }
   };
 
-  const getImageSrc = (path) => {
-    if (!path) return "";
-    return `${API}/files/${path}`;
-  };
-
   return (
     <div className="min-h-screen bg-[#0B061A]">
       <nav className="backdrop-blur-xl bg-black/40 border-b border-white/10 sticky top-0 z-50">
@@ -197,18 +165,6 @@ const Dashboard = () => {
                 </span>
               )}
             </div>
-
-            {user?.role === "admin" && (
-              <Button
-                data-testid="quick-upload-btn"
-                onClick={() => navigate("/upload")}
-                size="icon"
-                className="rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20"
-                title="Upload de projeto"
-              >
-                <Upload className="h-5 w-5" />
-              </Button>
-            )}
           </div>
         </div>
       </nav>
@@ -224,10 +180,10 @@ const Dashboard = () => {
           >
             <AlertTriangle className="h-5 w-5" />
             <span>
-              Seu acesso expira em <strong>{daysLeft}</strong>{" "}
+              Seu acesso expira em{" "}
+              <strong>{daysLeft}</strong>{" "}
               {daysLeft === 1 ? "dia" : "dias"}.
-              {daysLeft <= 5 &&
-                " Entre em contato pelo WhatsApp para renovar."}
+              {daysLeft <= 5 && " Entre em contato pelo WhatsApp para renovar."}
             </span>
           </div>
         )}
@@ -283,12 +239,9 @@ const Dashboard = () => {
                   <div className="aspect-square relative overflow-hidden">
                     {project.thumbnail_url ? (
                       <img
-                        src={getImageSrc(project.thumbnail_url)}
+                        src={`${API}/files/${project.thumbnail_url}`}
                         alt={project.title}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-[#1A102C] to-[#130A24] flex items-center justify-center">
