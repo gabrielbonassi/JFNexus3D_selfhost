@@ -16,24 +16,15 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const clearClientSession = () => {
-    localStorage.removeItem("guest_mode");
-    sessionStorage.clear();
+ const handleGuestAccess = () => {
+  localStorage.setItem("guest_mode", "true");
+  document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  document.cookie = "session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
-    document.cookie =
-      "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie =
-      "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie =
-      "session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-  };
-
-  const handleGuestAccess = () => {
-    clearClientSession();
-    localStorage.setItem("guest_mode", "true");
-    toast.success("Acesso como convidado");
-    navigate("/dashboard");
-  };
+  toast.success("Acesso como convidado");
+  navigate("/dashboard");
+};
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
@@ -53,7 +44,9 @@ const Login = () => {
       );
 
       localStorage.removeItem("guest_mode");
-      toast.success(`Bem-vindo, ${response.data.user?.name || "usuário"}!`);
+      toast.success(
+  `Bem-vindo, ${response.data.user?.name || "usuário"}!`
+);
       navigate("/dashboard", { state: { user: response.data.user } });
     } catch (error) {
       const detail = error.response?.data?.detail;
